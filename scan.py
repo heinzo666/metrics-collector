@@ -93,7 +93,7 @@ def run_masscan(ranges, ports, rate, outfile, iface):
     return found
 
 
-async def read_http(host, port, timeout=6, path="/", scheme=None):
+async def read_http(host, port, timeout=5, path="/", scheme=None):
     """Return (status, headers, body) or None."""
     if scheme is None:
         scheme = "https" if port in (443, 8443, 2083, 2087) else "http"
@@ -189,7 +189,8 @@ async def probe_one(ip, port, sem, mode):
                 res.update(p); res["kind"] = "proxy"
                 return res
         # router / web panel
-        for scheme in ("http", "https"):
+        schemes = ("https",) if port in (443, 8443) else (("http","https") if port in (8080,8000,8888,8081,81,3128,8118,1080,1081,9050) else ("http",))
+        for scheme in schemes:
             r = await read_http(ip, port, scheme=scheme)
             if not r: continue
             status, head, body = r
@@ -231,7 +232,7 @@ def main():
     ap.add_argument("--ranges", required=True)
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--rate", type=int, default=20000)
-    ap.add_argument("--mode", default="proxy", choices=["proxy", "router", "both"])
+    ap.add_argument("--mode", default="proxy", choices=["proxy", "router", "both", "fleet"])
     ap.add_argument("--out", default="out")
     ap.add_argument("--iface", default="")
     ap.add_argument("--limit-ranges", type=int, default=0)
@@ -243,7 +244,8 @@ def main():
     if args.limit_ranges: ranges = ranges[:args.limit_ranges]
     ips = sum(ipaddress.ip_network(r, strict=False).num_addresses for r in ranges)
     ports = {"proxy": PORTS_PROXY, "router": PORTS_ROUTER,
-             "both": "3128,1080,8118,8080,8000,8888,1081,9050,8081,80,8443,81"}[args.mode]
+             "both": "3128,1080,8118,8080,8000,8888,1081,9050,8081,80,8443,81",
+             "fleet": "80,8080,81,8888,8000,8443,8081,3128,1080,8118"}[args.mode]
     print(f"[*] shard {i}/{n}: {len(ranges)} ranges, {ips:,} IPs, ports {ports}", flush=True)
 
     t0 = time.time()
