@@ -25,9 +25,7 @@ jobs:
           ip -brief addr | head -5
       - name: scan
         run: |
-          SH="${{ github.event.inputs.shard }}"
-          if [ "$SH" != "0/1" ]; then SH="${{ matrix.shard }}"; fi
-          python3 scan.py --ranges scan/ranges.txt --shard "$SH" \
+          python3 scan.py --ranges scan/ranges.txt --shard "${{ matrix.shard }}" \
             --rate "${{ github.event.inputs.rate }}" --mode "${{ github.event.inputs.mode }}" \
             --limit-ranges "${{ github.event.inputs.limit }}" --out out || true
           ls -la out/ || true
