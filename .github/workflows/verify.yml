@@ -1,0 +1,20 @@
+name: verify
+on:
+  workflow_dispatch:
+    inputs:
+      conc: {description: "concurrency", required: true, default: "400"}
+jobs:
+  v:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        shard: ["0/10","1/10","2/10","3/10","4/10","5/10","6/10","7/10","8/10","9/10"]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 verify.py --in scan/residential-proxies.txt --shard "${{ matrix.shard }}" --conc "${{ github.event.inputs.conc }}" --out out || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: "verify-${{ strategy.job-index }}", path: out/, if-no-files-found: ignore, retention-days: 5}
