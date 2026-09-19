@@ -232,7 +232,7 @@ def main():
     ap.add_argument("--ranges", required=True)
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--rate", type=int, default=20000)
-    ap.add_argument("--mode", default="proxy", choices=["proxy", "router", "both", "fleet"])
+    ap.add_argument("--mode", default="proxy", choices=["proxy", "router", "both", "fleet", "core"])
     ap.add_argument("--out", default="out")
     ap.add_argument("--iface", default="")
     ap.add_argument("--limit-ranges", type=int, default=0)
@@ -245,7 +245,8 @@ def main():
     ips = sum(ipaddress.ip_network(r, strict=False).num_addresses for r in ranges)
     ports = {"proxy": PORTS_PROXY, "router": PORTS_ROUTER,
              "both": "3128,1080,8118,8080,8000,8888,1081,9050,8081,80,8443,81",
-             "fleet": "80,8080,81,8888,8000,8443,8081,3128,1080,8118"}[args.mode]
+             "fleet": "80,8080,81,8888,8000,8443,8081,3128,1080,8118",
+             "core": "80,8080,81,8888,8000,8443"}[args.mode]
     print(f"[*] shard {i}/{n}: {len(ranges)} ranges, {ips:,} IPs, ports {ports}", flush=True)
 
     t0 = time.time()
