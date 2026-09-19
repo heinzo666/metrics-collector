@@ -135,24 +135,25 @@ def main():
                     print(f"  LIVE {u}:{p} @ {hp}  {detail[:200]}", flush=True)
                 results.append({"hp": hp, "user": u, "pw": p, "verdict": v, "detail": detail})
     elif JOB == "panels":
-        rows = lines("creds/panels.txt")
+        raw = lines("creds/panels.txt")
+        rows = []
+        for r in raw:
+            cred = ""
+            if "\t" in r:
+                r, cred = r.split("\t", 1)
+            hp = r.split("|")[0].strip()
+            if ":" not in hp:
+                hp = hp + ":80"
+            rows.append((hp, cred))
         rows = chunked(rows)
         print(f"[panels] chunk {CHUNK}/{CHUNKS}: {len(rows)} endpoints", flush=True)
         with ThreadPoolExecutor(max_workers=30) as ex:
-            futs = {}
-            for r in rows:
-                if "\t" in r:
-                    hp, cred = r.split("\t", 1)
-                    futs[ex.submit(panel_one, hp, [cred])] = hp
-                else:
-                    futs[ex.submit(panel_one, r, [])] = r
+            futs = {ex.submit(panel_one, hp, [c] if c else []): hp for hp, c in rows}
             for f in as_completed(futs):
-                hp = futs[f]
                 try: res = f.result()
                 except Exception: res = None
                 if res:
-                    if res["fp"] not in ("Unknown",):
-                        print(f"  PANEL {res['hp']:24} {res['fp']:10} {res['code']} {res['title'][:50]}", flush=True)
+                    print(f"  PANEL {res['hp']:24} {res['fp']:12} {res['code']} {res['title'][:50]}", flush=True)
                     results.append(res)
     with open(f"{OUT}/{JOB}-{CHUNK}.jsonl", "w") as f:
         for r in results:
