@@ -1,0 +1,40 @@
+name: scan
+on:
+  workflow_dispatch:
+    inputs:
+      shard:      {description: "i/n", required: true, default: "0/1"}
+      rate:       {description: "pps", required: true, default: "20000"}
+      mode:       {description: "proxy|router|both", required: true, default: "both"}
+      limit:      {description: "limit ranges (0=all)", required: true, default: "0"}
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: ["0/20","1/20","2/20","3/20","4/20","5/20","6/20","7/20","8/20","9/20","10/20","11/20","12/20","13/20","14/20","15/20","16/20","17/20","18/20","19/20"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: install masscan
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq masscan
+          masscan --version | head -2
+          ip -brief addr | head -5
+      - name: scan
+        run: |
+          SH="${{ github.event.inputs.shard }}"
+          if [ "$SH" != "0/1" ]; then SH="${{ matrix.shard }}"; fi
+          python3 scan.py --ranges scan/ranges.txt --shard "$SH" \
+            --rate "${{ github.event.inputs.rate }}" --mode "${{ github.event.inputs.mode }}" \
+            --limit-ranges "${{ github.event.inputs.limit }}" --out out || true
+          ls -la out/ || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scan-${{ strategy.job-index }}
+          path: out/
+          if-no-files-found: ignore
+          retention-days: 5
