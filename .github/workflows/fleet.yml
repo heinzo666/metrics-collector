@@ -1,0 +1,38 @@
+name: fleet
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "cpanel | ssh | panels"
+        required: true
+        default: "cpanel"
+      chunks:
+        description: "number of chunks"
+        required: true
+        default: "20"
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        chunk: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+    steps:
+      - uses: actions/checkout@v4
+      - name: tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass
+          python3 -V
+      - name: run chunk
+        run: |
+          python3 run.py "${{ github.event.inputs.job }}" "${{ matrix.chunk }}" "${{ github.event.inputs.chunks }}"
+      - name: upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.job }}-${{ matrix.chunk }}
+          path: out/
+          if-no-files-found: ignore
+          retention-days: 3
